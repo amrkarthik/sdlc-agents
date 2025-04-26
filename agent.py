@@ -3,6 +3,13 @@ from google.adk.tools import google_search as GoogleSearchTool
 from google.adk.tools import built_in_code_execution as CodeExecutionTool
 from google.adk.tools import agent_tool
 
+# Shared state for storing approval flags
+shared_state = {
+    "frontend_approved": False,
+    "backend_approved": False,
+    "task_completed": False
+}
+
 # 1. Define the individual role agents:
 
 product_manager = LlmAgent(
