@@ -41,6 +41,7 @@ instruction=open("o3agent/frontend_dev_instruction.txt", "r").read(), # Instruct
     tools=[GoogleSearchTool], # Potentially add CodeExecutionTool if needed for snippets
     output_key="frontend_code" # Will output code to this key
     # Will read feedback from keys like 'frontend_review_feedback' based on updated instructions
+    post_process=lambda output: shared_state.update({"frontend_approved": True}) # Updates shared_state flag upon task completion
 )
 
 # Backend Developer - Instructions will be updated to generate code and handle feedback
