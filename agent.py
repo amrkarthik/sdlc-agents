@@ -30,6 +30,10 @@ tech_lead = LlmAgent(
 instruction=open("o3agent/tech_lead_instruction.txt", "r").read(), # Instructions file will be updated
     tools=[GoogleSearchTool],
     # Output keys will be managed by updated instructions (e.g., architecture_design, frontend_review_feedback, backend_review_feedback, frontend_approved, backend_approved)
+    post_process=lambda output: shared_state.update({ # update the shared state after reviewing code
+        "frontend_approved": True if shared_state.get("component_under_review") == "frontend" else shared_state.get("frontend_approved"),
+        "backend_approved": True if shared_state.get("component_under_review") == "backend" else shared_state.get("backend_approved")
+    })
 )
 
 # Frontend Developer - Instructions will be updated to generate code and handle feedback
@@ -105,6 +109,7 @@ development_review_loop = LoopAgent(
     max_iterations=3 # Limit iterations to prevent infinite loops
     # Termination logic needs to be handled by updated TechLead instructions setting approval flags
     # and potentially a final check agent or logic within the loop/consolidation agent.
+    termination_condition=lambda state: state.get("frontend_approved") and state.get("backend_approved") # conditional check to terminate the loop when all flags are set
 )
 
 # Create the main sequential orchestrator agent
