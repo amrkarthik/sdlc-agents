@@ -53,6 +53,7 @@ instruction=open("o3agent/backend_dev_instruction.txt", "r").read(), # Instructi
     tools=[GoogleSearchTool], # Potentially add CodeExecutionTool
     output_key="backend_code" # Will output code to this key
     # Will read feedback from keys like 'backend_review_feedback' based on updated instructions
+    post_process=lambda output: shared_state.update({"backend_approved": True}) # Updates shared_state flag upon task completion
 )
 
 db_engineer = LlmAgent(
