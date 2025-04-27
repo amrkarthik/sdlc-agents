@@ -3,6 +3,13 @@ from google.adk.tools import google_search as GoogleSearchTool
 from google.adk.tools import built_in_code_execution as CodeExecutionTool
 from google.adk.tools import agent_tool
 
+# Shared state for storing approval flags
+shared_state = {
+    "frontend_approved": False,
+    "backend_approved": False,
+    "task_completed": False
+}
+
 # 1. Define the individual role agents:
 
 product_manager = LlmAgent(
@@ -23,6 +30,10 @@ tech_lead = LlmAgent(
 instruction=open("o3agent/tech_lead_instruction.txt", "r").read(), # Instructions file will be updated
     tools=[GoogleSearchTool],
     # Output keys will be managed by updated instructions (e.g., architecture_design, frontend_review_feedback, backend_review_feedback, frontend_approved, backend_approved)
+    post_process=lambda output: shared_state.update({ # update the shared state after reviewing code
+        "frontend_approved": True if shared_state.get("component_under_review") == "frontend" else shared_state.get("frontend_approved"),
+        "backend_approved": True if shared_state.get("component_under_review") == "backend" else shared_state.get("backend_approved")
+    })
 )
 
 # Frontend Developer - Instructions will be updated to generate code and handle feedback
@@ -34,6 +45,7 @@ instruction=open("o3agent/frontend_dev_instruction.txt", "r").read(), # Instruct
     tools=[GoogleSearchTool], # Potentially add CodeExecutionTool if needed for snippets
     output_key="frontend_code" # Will output code to this key
     # Will read feedback from keys like 'frontend_review_feedback' based on updated instructions
+    post_process=lambda output: shared_state.update({"frontend_approved": True}) # Updates shared_state flag upon task completion
 )
 
 # Backend Developer - Instructions will be updated to generate code and handle feedback
@@ -45,6 +57,7 @@ instruction=open("o3agent/backend_dev_instruction.txt", "r").read(), # Instructi
     tools=[GoogleSearchTool], # Potentially add CodeExecutionTool
     output_key="backend_code" # Will output code to this key
     # Will read feedback from keys like 'backend_review_feedback' based on updated instructions
+    post_process=lambda output: shared_state.update({"backend_approved": True}) # Updates shared_state flag upon task completion
 )
 
 db_engineer = LlmAgent(
@@ -96,6 +109,7 @@ development_review_loop = LoopAgent(
     max_iterations=3 # Limit iterations to prevent infinite loops
     # Termination logic needs to be handled by updated TechLead instructions setting approval flags
     # and potentially a final check agent or logic within the loop/consolidation agent.
+    termination_condition=lambda state: state.get("frontend_approved") and state.get("backend_approved") # conditional check to terminate the loop when all flags are set
 )
 
 # Create the main sequential orchestrator agent
